@@ -59,7 +59,7 @@ describe('Node Server Request Listener Function', function() {
   it('Should accept posts to /classes/room', function() {
     var stubMsg = {
       username: 'Jono',
-      message: 'Do my bidding!'
+      text: 'Do my bidding!'
     };
     var req = new stubs.request('/classes/messages', 'POST', stubMsg);
     var res = new stubs.response();
@@ -78,7 +78,7 @@ describe('Node Server Request Listener Function', function() {
   it('Should respond with messages that were previously posted', function() {
     var stubMsg = {
       username: 'Jono',
-      message: 'Do my bidding!'
+      text: 'Do my bidding!'
     };
     var req = new stubs.request('/classes/messages', 'POST', stubMsg);
     var res = new stubs.response();
@@ -97,7 +97,8 @@ describe('Node Server Request Listener Function', function() {
     var messages = JSON.parse(res._data).results;
     expect(messages.length).to.be.above(0);
     expect(messages[0].username).to.equal('Jono');
-    expect(messages[0].message).to.equal('Do my bidding!');
+    expect(messages[0].text).to.equal('Do my bidding!');
+    expect(messages[0].objectId).to.equal(1);
     expect(res._ended).to.equal(true);
   });
 
@@ -114,6 +115,35 @@ describe('Node Server Request Listener Function', function() {
       function() {
         expect(res._responseCode).to.equal(404);
       });
+  });
+
+  it('Should add messages in chronological order', function() {
+    for (var i = 0; i < 4; i++) {
+      var stubMsg = {
+        username: 'Jono',
+        text: 'Do my bidding!'
+      };
+      var req = new stubs.request('/classes/messages', 'POST', stubMsg);
+      var res = new stubs.response();
+
+      handler.requestHandler(req, res);
+
+      expect(res._responseCode).to.equal(201);  
+    }
+
+      // Now if we request the log for that room the message we posted should be there:
+    req = new stubs.request('/classes/messages', 'GET');
+    res = new stubs.response();
+
+    handler.requestHandler(req, res);
+
+    expect(res._responseCode).to.equal(200);
+    var messages = JSON.parse(res._data).results;
+    expect(messages[0].objectId).to.equal(1);
+    expect(messages[1].objectId).to.equal(2);
+    expect(messages[2].objectId).to.equal(3);
+    expect(messages[3].objectId).to.equal(4);
+    expect(res._ended).to.equal(true);
   });
 
 });
