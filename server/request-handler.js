@@ -12,16 +12,38 @@ this file and include it in basic-server.js so that it actually works.
 *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html.
 
 **************************************************************/
-var data = [];
+var defaultCorsHeaders = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'access-control-allow-headers': 'content-type, accept',
+  'access-control-max-age': 10 // Seconds.
+};
+
+var dataResult = [];
 var counter = 1;
+
+fs.readFile('./database.txt', function read(err, dataFile) {
+  if (err) {
+    fs.writeFile('./test.txt', JSON.stringify(dataResult), function(err2) {
+      console.log(err2);
+    }); 
+  } else {
+    dataResult = JSON.parse(dataFile);
+    counter = dataResult[dataResult.length - 1].objectId + 1;
+  }
+
+});
 
 var requestHandler = function(request, response) {
   
 
+
   if (request.method === 'GET' && request.url === '/classes/messages') {
     response.writeHead(200, defaultCorsHeaders);
-    response.end(JSON.stringify({results:data}));
-  } else if (request.method === 'POST' && request.url === '/classes/messages') {
+    //console.log(dataResult);
+    response.end(JSON.stringify({results: dataResult}));
+  } 
+  else if (request.method === 'POST' && request.url === '/classes/messages') {
     var jsonData = '';
     var results;
     response.writeHead(201, defaultCorsHeaders);
@@ -31,16 +53,25 @@ var requestHandler = function(request, response) {
 
     request.on('end', function() {
       results = JSON.parse(jsonData);
-      data.push({
+      dataResult.push({
         username: results.username, 
         text: results.text,
         roomname: results.roomname,
         objectId: counter
       });
       counter++;
-    });
 
-    response.end('good stuff');
+      console.log(dataResult);
+
+      fs.writeFile('./database.txt', JSON.stringify(dataResult), function(err) {
+        console.log(err);
+      }); 
+    });
+    
+
+
+
+    response.end('Successful POST');
   } else {
   //   fs.readFile("./client/index.html", function(err, data){
   //     response.writeHead(200, {'Content-Type': 'text/html'});
@@ -87,7 +118,7 @@ var requestHandler = function(request, response) {
     //
     // Calling .end "flushes" the response's internal buffer, forcing
     // node to actually send all the data over to the client.
-    response.end('Hello, World!');
+    response.end('Sorry Try Again');
   }
 };
 
@@ -100,11 +131,6 @@ var requestHandler = function(request, response) {
 //
 // Another way to get around this restriction is to serve you chat
 // client from this domain by setting up static file serving.
-var defaultCorsHeaders = {
-  'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'access-control-allow-headers': 'content-type, accept',
-  'access-control-max-age': 10 // Seconds.
-};
+
 
 exports.requestHandler = requestHandler;
